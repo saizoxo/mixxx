@@ -1,0 +1,67 @@
+
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Build Mixxx Android ARM64 APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+
+    steps:
+      - name: Check out Mixxx
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Android build environment
+        run: tools/android_buildenv.sh setup
+        env:
+          BUILDENV_BASEPATH: /home/runner/buildenv
+
+      - name: Create temporary Android signing key
+        run: |
+          keytool -genkeypair \
+            -keystore "$GITHUB_WORKSPACE/mixxx.keystore" \
+            -alias mixxx \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 365 \
+            -storepass mixxxandroid \
+            -keypass mixxxandroid \
+            -dname "CN=Mixxx Android Build"
+          {
+            echo "QT_ANDROID_KEYSTORE_ALIAS=mixxx"
+            echo "QT_ANDROID_KEYSTORE_KEY_PASS=mixxxandroid"
+            echo "QT_ANDROID_KEYSTORE_STORE_PASS=mixxxandroid"
+            echo "QT_ANDROID_KEYSTORE_PATH=$GITHUB_WORKSPACE/mixxx.keystore"
+          } >> "$GITHUB_ENV"
+
+      - name: Configure Android build
+        run: |
+          cmake -S . -B build \
+            -DBULK=ON \
+            -DQT6=ON \
+            -DQML=ON \
+            -DHID=ON \
+            -DVCPKG_TARGET_TRIPLET=arm64-android \
+            -DVCPKG_DEFAULT_HOST_TRIPLET=x64-linux-release \
+            -DCMAKE_SYSTEM_NAME=Android \
+            -DBUILD_TESTING=OFF \
+            -DBUILD_BENCH=OFF
+
+      - name: Build Android APK
+        run: cmake --build build --parallel 2
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mixxx-android-apk
+          path: build/android-build/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 7
