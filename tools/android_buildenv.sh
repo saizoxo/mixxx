@@ -51,7 +51,7 @@ fi
 BUILDENV_URL="https://downloads.mixxx.org/dependencies/${BUILDENV_BRANCH}/Linux/${BUILDENV_NAME}.zip"
 MIXXX_ROOT="$(realpath "$(dirname "$THIS_SCRIPT_NAME")/..")"
 ANDROID_API=34
-ANDROID_VERSION=34.0.0
+ANDROID_VERSION=35.0.0
 ANDROID_NDK=27.2.12479018
 
 [ -z "$BUILDENV_BASEPATH" ] && BUILDENV_BASEPATH="${MIXXX_ROOT}/buildenv"
